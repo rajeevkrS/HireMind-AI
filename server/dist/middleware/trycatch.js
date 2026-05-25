@@ -1,3 +1,4 @@
+// This code creates a reusable error-handling wrapper middleware for Express.js
 export const TryCatch = (handler) => {
     return async (req, res, next) => {
         try {
