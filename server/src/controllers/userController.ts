@@ -3,6 +3,7 @@ import { oauth2client } from "../config/googleconfig.js";
 import { TryCatch } from "../middleware/trycatch.js";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import { AuthenticatedRequest } from "../middleware/isAuth.js";
 
 // API for User Login
 export const loginUser = TryCatch(async (req, res) => {
@@ -51,4 +52,11 @@ export const loginUser = TryCatch(async (req, res) => {
     token,
     user,
   });
+});
+
+// API to get User Profile
+export const getProfile = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const user = req.user;
+
+  res.json(user);
 });

@@ -42,3 +42,8 @@ export const loginUser = TryCatch(async (req, res) => {
         user,
     });
 });
+// API to get User Profile
+export const getProfile = TryCatch(async (req, res) => {
+    const user = req.user;
+    res.json(user);
+});
