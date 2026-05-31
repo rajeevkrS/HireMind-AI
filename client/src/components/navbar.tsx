@@ -62,7 +62,7 @@ const Navbar = () => {
               <img
                 src="/user.png"
                 alt=""
-                className="h-8 w-8 rounded-full object-cover"
+                className="h-5 w-5 rounded-md object-cover"
               />
 
               <span className="text-sm text-white/80">
@@ -90,12 +90,14 @@ const Navbar = () => {
 
         {/* Mobile Button */}
         <div className="flex items-center gap-3 lg:hidden">
-          <Link
-            to="/login"
-            className="rounded-lg bg-linear-to-r from-indigo-500 to-cyan-400 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-90"
-          >
-            Get Started
-          </Link>
+          {!isAuth && (
+            <Link
+              to="/login"
+              className="rounded-lg bg-linear-to-r from-indigo-500 to-cyan-400 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-90"
+            >
+              Get Started
+            </Link>
+          )}
 
           <button
             onClick={() => setOpen(!open)}
@@ -130,7 +132,7 @@ const Navbar = () => {
                   <img
                     src="/user.png"
                     alt=""
-                    className="h-9 w-9 rounded-full object-cover"
+                    className="h-5 w-5 rounded-md object-cover"
                   />
 
                   <span className="text-sm text-white/80">
