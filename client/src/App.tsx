@@ -6,6 +6,8 @@ import Login from "./pages/Login";
 import Account from "./pages/Account";
 import { useAppData } from "./context/AppContext";
 import Loading from "./components/loading";
+import PublicRoutes from "./components/PublicRoutes";
+import ProtectedRoutes from "./components/ProtectedRoutes";
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -22,8 +24,14 @@ const App = () => {
 
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/account" element={<Account />} />
+
+        <Route element={<PublicRoutes />}>
+          <Route path="/login" element={<Login />} />
+        </Route>
+
+        <Route element={<ProtectedRoutes />}>
+          <Route path="/account" element={<Account />} />
+        </Route>
       </Routes>
 
       <Footer />
