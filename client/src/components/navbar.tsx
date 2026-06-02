@@ -80,7 +80,7 @@ const Navbar = () => {
 
               <Link
                 to="/login"
-                className="rounded-xl bg-linear-to-r from-indigo-500 to-cyan-400 px-5 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-90"
+                className="rounded-xl btn-primary px-5 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-90"
               >
                 Get Started
               </Link>
@@ -93,7 +93,7 @@ const Navbar = () => {
           {!isAuth && (
             <Link
               to="/login"
-              className="rounded-lg bg-linear-to-r from-indigo-500 to-cyan-400 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-90"
+              className="rounded-lg btn-primary px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-90"
             >
               Get Started
             </Link>
@@ -143,14 +143,14 @@ const Navbar = () => {
                 <>
                   <Link
                     to="/login"
-                    className="rounded-xl border border-white/10 hover:border-white/20 px-4 py-3 text-center text-sm text-white/70 hover:text-white"
+                    className="text-center rounded-xl border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
                   >
                     Log In
                   </Link>
 
                   <Link
                     to="/login"
-                    className="rounded-xl bg-linear-to-r from-indigo-500 to-cyan-400 px-4 py-3 text-center text-sm font-medium text-white"
+                    className="rounded-xl btn-primary px-4 py-3 text-center text-sm font-medium text-white"
                   >
                     Get Started
                   </Link>
