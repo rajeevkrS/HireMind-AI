@@ -9,6 +9,7 @@ import Loading from "./components/loading";
 import PublicRoutes from "./components/PublicRoutes";
 import ProtectedRoutes from "./components/ProtectedRoutes";
 import AnalysePage from "./pages/Analyse";
+import JobMatcherPage from "./pages/JobsMatcher";
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -33,6 +34,7 @@ const App = () => {
         <Route element={<ProtectedRoutes />}>
           <Route path="/account" element={<Account />} />
           <Route path="/analyse" element={<AnalysePage />} />
+          <Route path="/jobmatcher" element={<JobMatcherPage />} />
         </Route>
       </Routes>
 

@@ -5,10 +5,9 @@ import { useAppData } from "../context/AppContext";
 
 const navLinks = [
   { name: "Analyse", path: "/analyse" },
-  { name: "Jobs", path: "/jobmatcher" },
+  { name: "Job Matcher", path: "/jobmatcher" },
   { name: "Resume Lab", path: "/resumebuilder" },
   { name: "Interview AI", path: "/interviewprep" },
-  { name: "Pricing", path: "/pricing" },
 ];
 
 const Navbar = () => {

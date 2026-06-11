@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { TryCatch } from "../middleware/trycatch.js";
 import User from "../models/User.js";
-import { ResumeAnalyserPrompt } from "../config/prompt.js";
+import { JobMatcherPrompt, ResumeAnalyserPrompt } from "../config/prompt.js";
 dotenv.config();
 // Create Gemini Client instance
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY_GEMINI });
@@ -31,6 +31,7 @@ async function generateContentWithRetry(payload, retries = 2) {
         throw error;
     }
 }
+// API to Analyse Resume
 export const analyseResume = TryCatch(async (req, res) => {
     // Get PDF Data
     const { pdfBase64 } = req.body;
@@ -122,6 +123,92 @@ export const analyseResume = TryCatch(async (req, res) => {
         }
         return res.status(500).json({
             message: "Unable to analyse your resume at the moment. Please try again later.",
+        });
+    }
+});
+// API to Find Job Match
+export const jobMatcher = TryCatch(async (req, res) => {
+    const { mode, skills, experience, pdfBase64 } = req.body;
+    if (!mode) {
+        return res.status(400).json({
+            message: "Mode is required",
+        });
+    }
+    if (mode === "manual" && (!skills?.length || !experience?.trim())) {
+        return res.status(400).json({
+            message: "Skills and experience are required",
+        });
+    }
+    if (mode === "resume" && !pdfBase64) {
+        return res.status(400).json({
+            message: "PDF is required",
+        });
+    }
+    // Find User
+    const user = await User.findById(req.user?._id);
+    // Check Request Limits
+    if (!user || !user.canMakeRequest()) {
+        return res.status(403).json({
+            message: "Upgrade your plan to continue",
+        });
+    }
+    try {
+        const parts = [
+            {
+                text: JobMatcherPrompt(mode, skills, experience),
+            },
+        ];
+        if (mode === "resume") {
+            parts.push({
+                inlineData: {
+                    mimeType: "application/pdf",
+                    data: pdfBase64.replace(/^data:application\/pdf;base64,/, ""),
+                },
+            });
+        }
+        const response = await generateContentWithRetry({
+            model: "gemini-2.5-flash",
+            contents: [
+                {
+                    role: "user",
+                    parts,
+                },
+            ],
+        });
+        const rawText = response.text?.replace(/```json|```/g, "").trim();
+        if (!rawText) {
+            return res.status(500).json({
+                message: "AI returned an empty response. Please try again.",
+            });
+        }
+        let jsonResponse;
+        try {
+            jsonResponse = JSON.parse(rawText);
+        }
+        catch (error) {
+            console.error("JSON Parse Error:", error);
+            return res.status(500).json({
+                message: "AI returned an unexpected response format. Please try again.",
+            });
+        }
+        if (!user.hasProAccess()) {
+            user.freeRequestsUsed += 1;
+            await user.save();
+        }
+        return res.status(200).json(jsonResponse);
+    }
+    catch (error) {
+        console.error("Job Matcher Error:", error);
+        const isHighDemandError = error?.status === 503 ||
+            error?.message?.includes("high demand") ||
+            error?.message?.includes("UNAVAILABLE");
+        if (isHighDemandError) {
+            return res.status(503).json({
+                message: "Job recommendations are temporarily unavailable due to high demand. Please try again in a few minutes.",
+            });
+        }
+        return res.status(500).json({
+            message: "Unable to generate job recommendations at the moment. Please try again later.",
         });
     }
 });
