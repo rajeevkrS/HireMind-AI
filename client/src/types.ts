@@ -61,7 +61,7 @@ export interface Experience {
 // Education section of resume
 export interface Education {
   degree: string;
-  school: string;
+  college: string;
   location: string;
   year: string;
   gpa: string;

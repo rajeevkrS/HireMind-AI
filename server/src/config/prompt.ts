@@ -37,13 +37,13 @@ achievements, section organization and flow.
 export const JobMatcherPrompt = (
   mode: string,
   skills?: string[],
-  experience?: string
+  experience?: string,
 ) => `
 You are an expert career counselor and job market analyst.
 ${
   mode === "manual"
     ? `The candidate has these skills: ${skills?.join(
-        ", "
+        ", ",
       )}\nExperience: ${experience}`
     : "Analyze the attached resume to extract skills and experience."
 }
@@ -101,7 +101,7 @@ Return ONLY valid JSON with this exact structure:
   "education": [
     {
       "degree": "Degree Name",
-      "school": "Institution Name",
+      "college": "Institution Name",
       "location": "City, Country",
       "year": "Graduation Year",
       "gpa": "GPA if provided or empty string"
@@ -134,7 +134,7 @@ export const generateInterviewPrompt = (
   round: string,
   mode: string,
   skills?: string,
-  experience?: string
+  experience?: string,
 ) => `
 You are an expert ${
   round === "hr" ? "HR interviewer" : "Senior Technical Interviewer"

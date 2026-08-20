@@ -4,6 +4,7 @@ import { TryCatch } from "../middleware/trycatch.js";
 import { AuthenticatedRequest } from "../middleware/isAuth.js";
 import User from "../models/User.js";
 import {
+  buildResumePrompt,
   generateInterviewPrompt,
   JobMatcherPrompt,
   ResumeAnalyserPrompt,
@@ -269,7 +270,7 @@ export const jobMatcher = TryCatch(async (req: AuthenticatedRequest, res) => {
   }
 });
 
-//
+// API to Generate Interview Questions
 export const generateInterview = TryCatch(
   async (req: AuthenticatedRequest, res) => {
     const { mode, round, skills, experience, pdfBase64 } = req.body;
@@ -356,7 +357,7 @@ export const generateInterview = TryCatch(
 
       return res.status(200).json(jsonResponse);
     } catch (error: any) {
-      console.error("Job Matcher Error:", error);
+      console.error("Generate Interview Error:", error);
 
       const isHighDemandError =
         error?.status === 503 ||
@@ -366,14 +367,119 @@ export const generateInterview = TryCatch(
       if (isHighDemandError) {
         return res.status(503).json({
           message:
-            "Job recommendations are temporarily unavailable due to high demand. Please try again in a few minutes.",
+            "Generating Interview Questions are temporarily unavailable due to high demand. Please try again in a few minutes.",
         });
       }
 
       return res.status(500).json({
         message:
-          "Unable to generate job recommendations at the moment. Please try again later.",
+          "Unable to generate interview question at the moment. Please try again later.",
       });
     }
   },
 );
+
+// API to Build Resume
+export const buildResume = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const { mode, formData, pdfBase64 } = req.body;
+
+  if (!mode) {
+    return res.status(400).json({
+      message: "Mode is required",
+    });
+  }
+
+  if (mode === "manual" && !formData) {
+    return res.status(400).json({
+      message: "Form data is required",
+    });
+  }
+
+  if (mode === "improve" && !pdfBase64) {
+    return res.status(400).json({
+      message: "PDF is required",
+    });
+  }
+
+  // Find User
+  const user = await User.findById(req.user?._id);
+
+  // Check Request Limits
+  if (!user || !user.canMakeRequest()) {
+    return res.status(403).json({
+      message: "Upgrade your plan to continue",
+    });
+  }
+
+  try {
+    const parts: any[] = [
+      {
+        text: buildResumePrompt(mode, formData),
+      },
+    ];
+
+    if (mode === "improve") {
+      parts.push({
+        inlineData: {
+          mimeType: "application/pdf",
+          data: pdfBase64.replace(/^data:application\/pdf;base64,/, ""),
+        },
+      });
+    }
+
+    const response = await generateContentWithRetry({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts,
+        },
+      ],
+    });
+
+    const rawText = response.text?.replace(/```json|```/g, "").trim();
+
+    if (!rawText) {
+      return res.status(500).json({
+        message: "AI returned an empty response. Please try again.",
+      });
+    }
+
+    let jsonResponse;
+
+    try {
+      jsonResponse = JSON.parse(rawText);
+    } catch (error) {
+      console.error("JSON Parse Error:", error);
+
+      return res.status(500).json({
+        message: "AI returned an unexpected response format. Please try again.",
+      });
+    }
+
+    if (!user.hasProAccess()) {
+      user.freeRequestsUsed += 1;
+      await user.save();
+    }
+
+    return res.status(200).json(jsonResponse);
+  } catch (error: any) {
+    console.error("Building Resume Error:", error);
+
+    const isHighDemandError =
+      error?.status === 503 ||
+      error?.message?.includes("high demand") ||
+      error?.message?.includes("UNAVAILABLE");
+
+    if (isHighDemandError) {
+      return res.status(503).json({
+        message:
+          "Resume Builder is temporarily unavailable due to high demand. Please try again in a few minutes.",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Unable to build resume at the moment. Please try again later.",
+    });
+  }
+});

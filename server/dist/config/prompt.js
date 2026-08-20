@@ -89,7 +89,7 @@ Return ONLY valid JSON with this exact structure:
   "education": [
     {
       "degree": "Degree Name",
-      "school": "Institution Name",
+      "college": "Institution Name",
       "location": "City, Country",
       "year": "Graduation Year",
       "gpa": "GPA if provided or empty string"

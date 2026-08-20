@@ -297,7 +297,7 @@ export function generateResumePDF(r: ResumeData) {
       checkPage(10);
       doc.setFontSize(10).setFont("helvetica", "bold").setTextColor(26, 26, 26);
       doc.text(
-        `${e.degree}  ·  ${e.school}${e.location ? `, ${e.location}` : ""}`,
+        `${e.degree}  ·  ${e.college}${e.location ? `, ${e.location}` : ""}`,
         ml,
         y,
       );
