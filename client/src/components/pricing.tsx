@@ -3,6 +3,15 @@ import { useAppData } from "../context/AppContext";
 import { plans } from "../utils";
 import { useState } from "react";
 import { CheckCircle, Shield } from "lucide-react";
+import { backendUrl } from "../App";
+import axios from "axios";
+import toast from "react-hot-toast";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 function StatusBadge() {
   const { isAuth, user } = useAppData();
@@ -32,6 +41,7 @@ function StatusBadge() {
   );
 }
 
+// Function receives plan and highlight
 function PlanCTA({
   plan,
   highlight,
@@ -39,8 +49,10 @@ function PlanCTA({
   plan: (typeof plans)[0];
   highlight: boolean;
 }) {
+  // Get authentication/user information
   const { isAuth, user, setUser } = useAppData();
 
+  // Check whether the user currently has Pro
   const isPro =
     isAuth && user?.subscription && new Date() < new Date(user.subscription);
 
@@ -66,12 +78,90 @@ function PlanCTA({
 
   const [loading, setLoading] = useState(false);
 
-  const handleSubscribe = async () => {
-    if (!isAuth) {
-      navigate("/login");
-      return;
+  // This function runs when the user clicks Subscribe
+  const handleSubscribe = async (price: any) => {
+    // Get authentication token
+    const token = localStorage.getItem("token");
+
+    setLoading(true);
+
+    let duration;
+
+    if (price === "₹299") {
+      duration = 1;
+    } else {
+      duration = 6;
     }
-    console.log("Getting pro plan");
+
+    // Calling checkout api from backend
+    const {
+      data: { order },
+    } = await axios.post(
+      `${backendUrl}/api/payment/checkout`,
+      { duration },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    // Create Razorpay options
+    // This object tells Razorpay how the payment window should behave
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      amount: order.amount,
+      currency: "INR",
+      name: "HIREMind AI",
+      description: "Land Your Dream Job",
+      order_id: order.id,
+      method: {
+        card: true,
+        netbanking: true,
+        wallet: false,
+        upi: false,
+        emi: false,
+        paylater: false,
+      },
+
+      // This function runs after Razorpay successfully completes the payment
+      handler: async function (response: any) {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+          response;
+
+        try {
+          // Sends payment details to backend
+          const { data } = await axios.post(
+            `${backendUrl}/api/payment/verify`,
+            {
+              razorpay_order_id,
+              razorpay_payment_id,
+              razorpay_signature,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          toast.success(data.message);
+          setUser(data.updatedUser); // update user profile
+          navigate("/account");
+          setLoading(false);
+        } catch (error: any) {
+          setLoading(false);
+          toast.error(error.response.data.message);
+        }
+      },
+      theme: {
+        color: "#F327254",
+      },
+    };
+
+    // Create Razorpay object and Open payment window
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
   };
 
   return (
@@ -81,7 +171,7 @@ function PlanCTA({
           ? "btn-primary"
           : "bg-white/6 hover:bg-white/10 border border-white/10 text-white cursor-pointer"
       }`}
-      onClick={handleSubscribe}
+      onClick={() => handleSubscribe(plan.price)}
       disabled={loading}
     >
       {loading ? "Please wait..." : plan.cta}
