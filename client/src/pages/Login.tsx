@@ -37,7 +37,10 @@ const Login = () => {
 
   const googleLogin = useGoogleLogin({
     onSuccess: handleGoogleLogin,
-    onError: handleGoogleLogin,
+    onError: () => {
+      setLoading(false);
+      toast.error("Google login failed!");
+    },
     flow: "auth-code",
   });
 

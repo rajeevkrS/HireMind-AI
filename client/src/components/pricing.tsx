@@ -80,6 +80,12 @@ function PlanCTA({
 
   // This function runs when the user clicks Subscribe
   const handleSubscribe = async (price: any) => {
+    // User is not logged in
+    if (!isAuth) {
+      navigate("/login");
+      return;
+    }
+
     // Get authentication token
     const token = localStorage.getItem("token");
 
