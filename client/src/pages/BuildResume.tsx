@@ -794,7 +794,7 @@ const BuildResume = () => {
                       className="flex justify-between flex-wrap gap-1 mb-2"
                     >
                       <span className=" text-white/70 font-medium">
-                        {e.degree} • {e.school}
+                        {e.degree} • {e.college}
                       </span>
 
                       <span className="text-white/35 text-xs">
