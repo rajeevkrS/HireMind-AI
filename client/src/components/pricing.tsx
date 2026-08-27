@@ -80,94 +80,120 @@ function PlanCTA({
 
   // This function runs when the user clicks Subscribe
   const handleSubscribe = async (price: any) => {
-    // User is not logged in
     if (!isAuth) {
       navigate("/login");
       return;
     }
 
-    // Get authentication token
     const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
     setLoading(true);
 
-    let duration;
+    try {
+      let duration = price === "₹299" ? 1 : 6;
 
-    if (price === "₹299") {
-      duration = 1;
-    } else {
-      duration = 6;
-    }
-
-    // Calling checkout api from backend
-    const {
-      data: { order },
-    } = await axios.post(
-      `${backendUrl}/api/payment/checkout`,
-      { duration },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      // 1. Create Razorpay order
+      const {
+        data: { order },
+      } = await axios.post(
+        `${backendUrl}/api/payment/checkout`,
+        { duration },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-    );
+      );
 
-    // Create Razorpay options
-    // This object tells Razorpay how the payment window should behave
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: order.amount,
-      currency: "INR",
-      name: "HIREMind AI",
-      description: "Land Your Dream Job",
-      order_id: order.id,
-      method: {
-        card: true,
-        netbanking: true,
-        wallet: false,
-        upi: false,
-        emi: false,
-        paylater: false,
-      },
+      // 2. Razorpay checkout
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: "INR",
+        name: "HIREMind AI",
+        description: "Land Your Dream Job",
+        order_id: order.id,
 
-      // This function runs after Razorpay successfully completes the payment
-      handler: async function (response: any) {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-          response;
+        handler: async function (response: any) {
+          console.log("RAZORPAY SUCCESS:", response);
 
-        try {
-          // Sends payment details to backend
-          const { data } = await axios.post(
-            `${backendUrl}/api/payment/verify`,
-            {
-              razorpay_order_id,
-              razorpay_payment_id,
-              razorpay_signature,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
+          try {
+            // 3. Verify payment on backend
+            const { data } = await axios.post(
+              `${backendUrl}/api/payment/verify`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
               },
-            },
-          );
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                timeout: 15000,
+              },
+            );
 
-          toast.success(data.message);
-          setUser(data.updatedUser); // update user profile
-          navigate("/account");
-          setLoading(false);
-        } catch (error: any) {
-          setLoading(false);
-          toast.error(error.response.data.message);
-        }
-      },
-      theme: {
-        color: "#F327254",
-      },
-    };
+            console.log("PAYMENT VERIFIED:", data);
 
-    // Create Razorpay object and Open payment window
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
+            setUser(data.updatedUser);
+
+            toast.success("Payment successful!");
+
+            setLoading(false);
+
+            navigate("/account");
+          } catch (error: any) {
+            console.error("PAYMENT VERIFICATION ERROR:", error);
+            console.error("Status:", error.response?.status);
+            console.error("Response:", error.response?.data);
+            console.error("Message:", error.message);
+
+            setLoading(false);
+
+            toast.error(
+              error.response?.data?.message ||
+                "Payment succeeded, but verification is still processing.",
+            );
+          }
+        },
+
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          },
+        },
+
+        theme: {
+          color: "#F327254",
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+
+      razorpay.on("payment.failed", function (response: any) {
+        console.error("RAZORPAY PAYMENT FAILED:", response);
+
+        setLoading(false);
+
+        toast.error(response.error?.description || "Payment failed");
+      });
+
+      razorpay.open();
+    } catch (error: any) {
+      console.error("CHECKOUT ERROR:", error);
+      console.error("Status:", error.response?.status);
+      console.error("Response:", error.response?.data);
+
+      setLoading(false);
+
+      toast.error(error.response?.data?.message || "Unable to start payment.");
+    }
   };
 
   return (
